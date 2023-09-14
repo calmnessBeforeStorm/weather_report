@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher, types
 from currentData import *
 from nextdayData import *
 
-TOKEN = '6383098673:AAGErH9Q-NUCia9Yx_EIMnDqKZIWfCYzdso'
+TOKEN = ''
 botaio = Bot(token=TOKEN)
 dp = Dispatcher(botaio)
 
