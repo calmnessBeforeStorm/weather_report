@@ -125,9 +125,9 @@ weather_descriptions = {
 }
 
 class Weather():
-    def __init__(self, current, nextday):
+    def __init__(self, current, forecast):
         self.current = current
-        self.nextday = nextday
+        self.forecast = forecast
 
     def get_current_data(self):
         #получаю инфу в текущем моменте
@@ -164,8 +164,82 @@ class Weather():
             'description': weather_descriptions.get(data['weather'][0]['description'], data['weather'][0]['description'])
         }
 
+    def get_presentDay_data(self):
+        present = requests.get(self.forecast)
+        data = present.json()
+
+        currentDateTime = datetime.date.today()
+
+        morningKey = None
+        afternoonKey = None
+        eveningKey = None
+
+        for value in data["list"]:
+            dt_text = value["dt_txt"]
+            if f"{currentDateTime.strftime('%Y-%m-%d')} 09:00:00" in dt_text:
+                morningKey = value
+            if f"{currentDateTime.strftime('%Y-%m-%d')} 12:00:00" in dt_text:
+                afternoonKey = value
+            if f"{currentDateTime.strftime('%Y-%m-%d')} 21:00:00" in dt_text:
+                eveningKey = value
+
+        def get_windspeed_Description(speed):
+            if speed <= 0.2:
+                return 'Штиль'
+            elif speed <= 1.5:
+                return 'Тихий'
+            elif speed <= 3.3:
+                return 'Легкий'
+            elif speed <= 5.4:
+                return 'Слабый'
+            elif speed <= 7.9:
+                return 'Умеренный'
+            elif speed <= 10.7:
+                return 'Умеренный+'
+            elif speed <= 13.8:
+                return 'Сильный'
+            elif speed <= 17.1:
+                return 'Сильный+'
+            elif speed <= 20.7:
+                return 'Очень сильный, ушып кетесин'
+            else:
+                return 'Шторм!'
+
+        wsdM = get_windspeed_Description(morningKey['wind']['speed'])
+        wsdA = get_windspeed_Description(afternoonKey['wind']['speed'])
+        wsdE = get_windspeed_Description(eveningKey['wind']['speed'])
+
+        return {
+            'windspeedMoring': morningKey['wind']['speed'],
+            'windspeedAfternoon': afternoonKey['wind']['speed'],
+            'windspeedEvening': eveningKey['wind']['speed'],
+
+            'windspeedDescriptionMorning': wsdM,
+            'windspeedDescriptionAfternoon': wsdA,
+            'windspeedDescriptionEvening': wsdE,
+
+            'tempMorning': morningKey['main']['temp'],
+            'tempAfternoon': afternoonKey['main']['temp'],
+            'tempEvening': eveningKey['main']['temp'],
+
+            'tempLikeMorning': morningKey['main']['feels_like'],
+            'tempLikeAfternoon': afternoonKey['main']['feels_like'],
+            'tempLikeEvening': eveningKey['main']['feels_like'],
+
+            'humidityMorning': morningKey['main']['humidity'],
+            'humidityAfternoon': afternoonKey['main']['humidity'],
+            'humidityEvening': eveningKey['main']['humidity'],
+
+            'descriptionMorning': weather_descriptions.get(morningKey['weather'][0]['description'],
+                                                           morningKey['weather'][0]['description']),
+            'descriptionAfternoon': weather_descriptions.get(afternoonKey['weather'][0]['description'],
+                                                             afternoonKey['weather'][0]['description']),
+            'descriptionEvening': weather_descriptions.get(eveningKey['weather'][0]['description'],
+                                                           eveningKey['weather'][0]['description']),
+        }
+
     def get_nextDay_data(self):
-        nextday = requests.get(self.nextday)
+        nextday = requests.get(self.forecast)
         data = nextday.json()
 
         currentDateTime = datetime.date.today()
