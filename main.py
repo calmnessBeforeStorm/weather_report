@@ -1,10 +1,8 @@
 import asyncio,markups
 import logging
-import aiohttp
 from aiogram import Bot, Dispatcher, types
 from weatherDesc import Weather
 from aiogram.filters import Command
-from aiogram.client.session.aiohttp import AiohttpSession
 
 logging.basicConfig(level=logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -14,12 +12,11 @@ file_handler.setFormatter(formatter)
 logging.getLogger().addHandler(file_handler)
 
 weather = Weather(
-    'https://api.openweathermap.org/data/2.5/weather?q=aktobe&appid=9fc9557dd4062bcaf7e732e10ee2e879&units=metric',
-    'http://api.openweathermap.org/data/2.5/forecast?q=aktobe&appid=9fc9557dd4062bcaf7e732e10ee2e879&units=metric'
+    'https://api.openweathermap.org/data/2.5/weather?q=aktobe&appid=ID&units=metric',
+    'http://api.openweathermap.org/data/2.5/forecast?q=aktobe&appid=ID&units=metric'
 )
 
-session = AiohttpSession(proxy="http://159.65.221.25:80", timeout=aiohttp.ClientTimeout(total=30))
-TOKEN = '6383098673:AAGErH9Q-NUCia9Yx_EIMnDqKZIWfCYzdso'
+TOKEN = ''
 botaio = Bot(token=TOKEN)
 dp = Dispatcher()
 
