@@ -1,17 +1,18 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
-btnSwitchMode = KeyboardButton('Поменять режим')
+btnSwitchMode = KeyboardButton(text='Поменять режим')
 
-#mods
-btnAdvancedMode = KeyboardButton('Расширенный режим')
-btnSimplifiedeMode = KeyboardButton('Упрощенный режим')
-modsMenu = ReplyKeyboardMarkup(resize_keyboard=True).add(btnAdvancedMode, btnSimplifiedeMode)
+# мод
+btnAdvancedMode = KeyboardButton(text='Расширенный режим')
+btnSimplifiedeMode = KeyboardButton(text='Упрощенный режим')
+modsMenu = ReplyKeyboardMarkup(resize_keyboard=True, keyboard=[[btnAdvancedMode, btnSimplifiedeMode]])
 
-#advancemode
-currentWeather = KeyboardButton('Текущая погода')
-nextDayWeather = KeyboardButton('Завтрашняя погода')
-btnpPeriodic = KeyboardButton('Периодическая отправка погоды')
-advanceMenu = ReplyKeyboardMarkup(resize_keyboard=True).add(currentWeather, nextDayWeather, btnSwitchMode, btnpPeriodic)
+# расширенный режим
+currentWeather = KeyboardButton(text='Текущая погода')
+nextDayWeather = KeyboardButton(text='Завтрашняя погода')
+presentWeather = KeyboardButton(text='Сегодняшняя погода')
+btnPeriodic = KeyboardButton(text='Периодическая отправка погоды')
+advanceMenu = ReplyKeyboardMarkup(resize_keyboard=True, keyboard=[[currentWeather, nextDayWeather], [btnSwitchMode, presentWeather], [btnPeriodic]])
 
 #simpleMode
 '''cделаю какданибуд'''
