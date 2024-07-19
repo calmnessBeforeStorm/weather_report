@@ -1,33 +1,91 @@
-import datetime
+import asyncio,markups
+import logging
+import aiohttp
 from aiogram import Bot, Dispatcher, types
-from currentData import *
-from nextdayData import *
+from weatherDesc import Weather
+from aiogram.filters import Command
+from aiogram.client.session.aiohttp import AiohttpSession
 
-TOKEN = ''
+logging.basicConfig(level=logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler = logging.FileHandler('bot.log')
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+logging.getLogger().addHandler(file_handler)
+
+weather = Weather(
+    'https://api.openweathermap.org/data/2.5/weather?q=aktobe&appid=9fc9557dd4062bcaf7e732e10ee2e879&units=metric',
+    'http://api.openweathermap.org/data/2.5/forecast?q=aktobe&appid=9fc9557dd4062bcaf7e732e10ee2e879&units=metric'
+)
+
+session = AiohttpSession(proxy="http://159.65.221.25:80", timeout=aiohttp.ClientTimeout(total=30))
+TOKEN = '6383098673:AAGErH9Q-NUCia9Yx_EIMnDqKZIWfCYzdso'
 botaio = Bot(token=TOKEN)
-dp = Dispatcher(botaio)
+dp = Dispatcher()
 
-current_time = datetime.datetime.now()
-formatted_time = current_time.strftime("%Y-%m-%d %H:%M")
+registered_users = set()
 
-@dp.message_handler(commands=["start"])
+async def scheduled(time):
+    q = 1
+    while True:
+        print(q)
+        q += 1
+        await send_current_message_aktobe()
+        await asyncio.sleep(time)
+
+async def send_current_message_aktobe():
+    data = weather.get_current_data()
+    ids = [764445437, 766773855, 994006554, 5304318111]
+    for i in ids:
+        await botaio.send_message(chat_id=i,
+                                  text=f"<b>Погода в текущее время!(periodic)\n\nОбщее описание погоды: {data['description']}\nТемпература воздуха: {round(data['temp'], 1)}°C\nОщущается как: {round(data['temp_like'], 1)}°C\nВлажность воздуха: {round(data['humidity'], 1)}%\nСостояние ветра: {data['windspeedDescription']}({data['windspeed']} м/с)</b>",
+                                  parse_mode='HTML')
+
+@dp.message(Command("start"))
 async def start(message: types.Message):
-    keyboard = types.ReplyKeyboardMarkup()
-    buttonCurrent = types.KeyboardButton(text="🎷 ! JAZZ FUSION ! 🎶 CURRENT")
-    buttonNextDay = types.KeyboardButton(text="🎷 ! JAZZ FUSION ! 🎶 NEXT DAY")
-    keyboard.add(buttonCurrent)
-    keyboard.add(buttonNextDay)
-    await message.answer("JAZZ FUSION??", reply_markup=keyboard)
+    user_id = message.from_user.id
+    if user_id not in registered_users:
+        registered_users.add(user_id)
 
-@dp.message_handler(lambda message: message.text == "🎷 ! JAZZ FUSION ! 🎶 CURRENT")
-async def juzz_fusion(message: types.Message):
-    await message.reply(f'<b>Сегодняшний день\nОбщее описание: {translationCurrent.text}</b>\n\n<b>Температура воздуха:</b> {round(tempCurrent, 1)}°C\n<b>Ощущается как:</b> {round(temp_likeCurrent, 1)}°C\n<b>Влажность воздуха:</b> {round(humidityCurrent, 1)}%\n<b>Состояние ветра:</b> {windSpeedDescription}({windspeedCurrent} м/с)\n<b>Направление ветра:</b> {windDirection}', parse_mode="HTML")
+    await botaio.send_message(user_id, 'Выберите режим', reply_markup=markups.modsMenu)
 
-@dp.message_handler(lambda message: message.text == "🎷 ! JAZZ FUSION ! 🎶 NEXT DAY")
-async def juzz_fusion(message: types.Message):
-    await message.reply(f'<b>{dttime}</b>\n<b>Завтрашний день\nОбщее описание: {translationNextDay.text}</b>\n\n<b>Температура воздуха:</b> {round(tempNextDay, 1)}°C\n<b>Ощущается как:</b> {round(temp_likeNextDay, 1)}°C\n<b>Влажность воздуха:</b> {round(humidityNextDay, 1)}%\n<b>Состояние ветра:</b> {windSpeedDescriptionNextDay}({windSpeedNextDay} м/с)\n<b>Направление ветра:</b> {windDirectionNextDay}', parse_mode="HTML")
+@dp.message()
+async def messages(message: types.Message):
+    if message.text == 'Расширенный режим':
+        await botaio.send_message(message.from_user.id, 'Выберите время', reply_markup=markups.advanceMenu)
 
+    elif message.text == 'Упрощенный режим':
+        await botaio.send_message(message.from_user.id, 'Режим находится в стадии разработки')
+
+    elif message.text == 'Текущая погода':
+        data = weather.get_current_data()
+        await botaio.send_message(message.from_user.id,
+                                  f"<b>Погода в текущее время!\n\nОбщее описание погоды: {data['description']}\nТемпература воздуха: {round(data['temp'], 1)}°C\nОщущается как: {round(data['temp_like'], 1)}°C\nВлажность воздуха: {round(data['humidity'], 1)}%\nСостояние ветра: {data['windspeedDescription']}({data['windspeed']} м/с)</b>",
+                                  parse_mode='HTML', reply_markup=markups.advanceMenu)
+
+    elif message.text == 'Завтрашняя погода':
+        data = weather.get_nextDay_data()
+        await botaio.send_message(message.from_user.id,
+                                  f"<b>Завтрашний день\n\n9:00\nОбщее описание: {data['descriptionMorning']}\nТемпература воздуха: {round(data['tempMorning'], 1)}°C\nОщущается как: {round(data['tempLikeMorning'], 1)}°C\nВлажность воздуха: {round(data['humidityMorning'], 1)}%\nСостояние ветра: {data['windspeedDescriptionMorning']}({data['windspeedMoring']} м/с)\n\n12:00\nОбщее описание: {data['descriptionAfternoon']}\nТемпература воздуха: {round(data['tempAfternoon'], 1)}°C\nОщущается как: {round(data['tempLikeAfternoon'], 1)}°C\nВлажность воздуха: {round(data['humidityAfternoon'], 1)}%\nСостояние ветра: {data['windspeedDescriptionAfternoon']}({data['windspeedAfternoon']} м/с)\n\n21:00\nОбщее описание: {data['descriptionEvening']}\nТемпература воздуха: {round(data['tempEvening'], 1)}°C\nОщущается как: {round(data['tempLikeEvening'], 1)}°C\nВлажность воздуха: {round(data['humidityEvening'], 1)}%\nСостояние ветра: {data['windspeedDescriptionEvening']}({data['windspeedEvening']} м/с)</b>",
+                                  parse_mode="HTML", reply_markup=markups.advanceMenu)
+
+    elif message.text == 'Периодическая отправка погоды':
+        await botaio.send_message(message.from_user.id, 'В разработке')
+
+    elif message.text == 'Поменять режим':
+        await botaio.send_message(message.from_user.id, 'Выберите режим', reply_markup=markups.modsMenu)
+
+    elif message.text == 'Сегодняшняя погода':
+        data = weather.get_presentDay_data()
+        await botaio.send_message(message.from_user.id,
+                                  f"<b>Сегодняшний день\n\n9:00\nОбщее описание: {data['descriptionMorning']}\nТемпература воздуха: {round(data['tempMorning'], 1)}°C\nОщущается как: {round(data['tempLikeMorning'], 1)}°C\nВлажность воздуха: {round(data['humidityMorning'], 1)}%\nСостояние ветра: {data['windspeedDescriptionMorning']}({data['windspeedMoring']} м/с)\n\n12:00\nОбщее описание: {data['descriptionAfternoon']}\nТемпература воздуха: {round(data['tempAfternoon'], 1)}°C\nОщущается как: {round(data['tempLikeAfternoon'], 1)}°C\nВлажность воздуха: {round(data['humidityAfternoon'], 1)}%\nСостояние ветра: {data['windspeedDescriptionAfternoon']}({data['windspeedAfternoon']} м/с)\n\n21:00\nОбщее описание: {data['descriptionEvening']}\nТемпература воздуха: {round(data['tempEvening'], 1)}°C\nОщущается как: {round(data['tempLikeEvening'], 1)}°C\nВлажность воздуха: {round(data['humidityEvening'], 1)}%\nСостояние ветра: {data['windspeedDescriptionEvening']}({data['windspeedEvening']} м/с)</b>",
+                                  parse_mode="HTML", reply_markup=markups.advanceMenu)
+
+async def main():
+    await botaio.delete_webhook(drop_pending_updates=True)
+    loop = asyncio.get_event_loop()
+    loop.create_task(scheduled(7000))
+    await dp.start_polling(botaio)
 
 if __name__ == '__main__':
-    from aiogram import executor
-    executor.start_polling(dp, skip_updates=True)
+    asyncio.run(main())
